@@ -48,7 +48,8 @@ llm_model_mlx = ChatOpenAI(
 
 # nvidia
 # nvidia_model = "openai/gpt-oss-120b"
-nvidia_model = "qwen/qwen3.5-397b-a17b"
+nvidia_model = "qwen/qwen3.5-122b-a10b"
+# nvidia_model = "qwen/qwen3.5-397b-a17b"
 llm_model_nvidia = ChatOpenAI(
     model=nvidia_model,
     api_key=NVIDIA_API_KEY,
@@ -111,6 +112,7 @@ async def process(update: Update, context: ContextTypes.DEFAULT_TYPE):
         update.effective_chat.id == CHAT_ID
     ):  # Only respond to messages from this chat ID (Sachin)
         # Run the agent
+        print(f"Req Recieved: {update.message.text}")
         result = await agent.ainvoke(
             {"messages": [{"role": "user", "content": update.message.text}]},
             config={"configurable": {"thread_id": "user_session_1"}},
@@ -122,7 +124,7 @@ async def process(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             reply_to_message_id=update.message.message_id,
-            text=f"Reply: {reply}",
+            text=reply,
         )
 
 
