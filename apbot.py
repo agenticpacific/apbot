@@ -7,6 +7,7 @@
 
 import logging, os
 from pathlib import Path
+from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import (
     filters,
@@ -21,7 +22,8 @@ from deepagents.backends import LocalShellBackend
 from langgraph.store.memory import InMemoryStore
 from langgraph.checkpoint.memory import MemorySaver
 
-CHAT_ID = os.environ["CHAT_ID"]
+load_dotenv()  # Load environment variables from .env file
+CHAT_ID = int(os.environ["CHAT_ID"])
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 NVIDIA_API_KEY = os.environ["NVIDIA_API_KEY"]
 USER = os.environ["USER"]
@@ -47,7 +49,7 @@ llm_model_mlx = ChatOpenAI(
 # nvidia
 # nvidia_model = "openai/gpt-oss-120b"
 nvidia_model = "qwen/qwen3.5-397b-a17b"
-llm_nvidia_openai_api = ChatOpenAI(
+llm_model_nvidia = ChatOpenAI(
     model=nvidia_model,
     api_key=NVIDIA_API_KEY,
     base_url="https://integrate.api.nvidia.com/v1",
@@ -73,7 +75,7 @@ async def send_file(filename: str) -> str:
 # agent
 memory_check_pointer = MemorySaver()
 agent = create_deep_agent(
-    model=llm_nvidia_openai_api,
+    model=llm_model_nvidia,
     tools=[send_file],
     backend=LocalShellBackend(
         root_dir=".", env={"PATH": "/usr/bin:/bin:/opt/homebrew/bin"}, virtual_mode=True
@@ -108,7 +110,6 @@ async def process(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if (
         update.effective_chat.id == CHAT_ID
     ):  # Only respond to messages from this chat ID (Sachin)
-
         # Run the agent
         result = await agent.ainvoke(
             {"messages": [{"role": "user", "content": update.message.text}]},
