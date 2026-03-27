@@ -1,3 +1,4 @@
+# curl -LsSf https://astral.sh/uv/install.sh | sh
 uv init -p 3.13
 uv add deepagents
 uv add langchain-openai
