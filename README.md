@@ -3,6 +3,5 @@
 Telegram Bot Agent based on LandChain DeepAgents Harness.
 
 TODO:
-Add Web Search
-Get Optimised Available Model from NVIDIA NIM
- 
+X) Add Web Search Tool
+X) Get Optimised Available Model from NVIDIA NIM

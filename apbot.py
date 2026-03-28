@@ -1,13 +1,7 @@
-# uv init -p 3.13
-# uv add deepagents
-# uv add python-telegram-bot
-# uv add pypdf
-# uv add python-pptx
-# uv add trafilatura
-
 import logging, os
 from pathlib import Path
 from dotenv import load_dotenv
+from langchain_tavily import TavilySearch
 from telegram import Update
 from telegram.ext import (
     filters,
@@ -27,6 +21,7 @@ load_dotenv()  # Load environment variables from .env file
 CHAT_ID = int(os.environ["CHAT_ID"])
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 NVIDIA_API_KEY = os.environ["NVIDIA_API_KEY"]
+TAVILY_API_KEY = os.environ["TAVILY_API_KEY"]
 USER = os.environ["USER"]
 
 telegram_bot = None
@@ -54,6 +49,9 @@ llm_model_nvidia = ChatOpenAI(
     api_key=NVIDIA_API_KEY,
     base_url="https://integrate.api.nvidia.com/v1",
     use_responses_api=False,
+    stream_usage=False,
+    max_retries=3,
+    timeout=10,
 )
 
 
@@ -62,6 +60,8 @@ def get_weather(city: str) -> str:
     """Get weather for a given city."""
     return f"It's always sunny in {city}!"
 
+#web search tool
+web_search = TavilySearch(max_results=5, topic="general")
 
 # send file tool
 async def send_file(filename: str) -> str:
@@ -73,11 +73,11 @@ async def send_file(filename: str) -> str:
 
 
 # agent
-print("Initializing Agent...")
+print(f"Initializing Agent: {nvidia_model}")
 memory_check_pointer = MemorySaver()
 agent = create_deep_agent(
     model=llm_model_nvidia,
-    tools=[send_file],
+    tools=[send_file, web_search],
     backend=LocalShellBackend(
         root_dir=".", env={"PATH": "/usr/bin:/bin:/opt/homebrew/bin"}, virtual_mode=True
     ),
@@ -88,6 +88,7 @@ agent = create_deep_agent(
     "Always generate files in the current directory and use relative paths. Never use absolute paths."
     "You can use the following tools: send_file(filename) to send a file or document to the user."
     "Always use the send_file tool to send files to the user instead of printing file contents.
+    Use web search tool to find accurate, up-to-date information.
     """,
     store=InMemoryStore(),
     checkpointer=memory_check_pointer,
