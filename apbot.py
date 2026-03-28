@@ -21,6 +21,7 @@ from langchain_openai import ChatOpenAI
 from deepagents.backends import LocalShellBackend
 from langgraph.store.memory import InMemoryStore
 from langgraph.checkpoint.memory import MemorySaver
+import models
 
 load_dotenv()  # Load environment variables from .env file
 CHAT_ID = int(os.environ["CHAT_ID"])
@@ -47,9 +48,7 @@ llm_model_mlx = ChatOpenAI(
 )
 
 # nvidia
-# nvidia_model = "openai/gpt-oss-120b"
-nvidia_model = "qwen/qwen3.5-122b-a10b"
-# nvidia_model = "qwen/qwen3.5-397b-a17b"
+nvidia_model = models.get_optimal_nvidia_model(NVIDIA_API_KEY)
 llm_model_nvidia = ChatOpenAI(
     model=nvidia_model,
     api_key=NVIDIA_API_KEY,
@@ -58,7 +57,7 @@ llm_model_nvidia = ChatOpenAI(
 )
 
 
-# agent tool
+# demo agent tool
 def get_weather(city: str) -> str:
     """Get weather for a given city."""
     return f"It's always sunny in {city}!"
@@ -74,6 +73,7 @@ async def send_file(filename: str) -> str:
 
 
 # agent
+print("Initializing Agent...")
 memory_check_pointer = MemorySaver()
 agent = create_deep_agent(
     model=llm_model_nvidia,
@@ -82,7 +82,7 @@ agent = create_deep_agent(
         root_dir=".", env={"PATH": "/usr/bin:/bin:/opt/homebrew/bin"}, virtual_mode=True
     ),
     system_prompt=f"""
-    "You are a helpful assistant (Agentic Pacific) that operates in a Telegram chat, specific to a user named {USER}."
+    "You are a helpful assistant (named: Agentic Pacific Bot) that operates in a Telegram chat, specific to a user named {USER}."
     "You operate in a uv Python virtual environment, and can write and execute Python code."
     "You have the following libraries available: pypdf, python-pptx, trafilatura (to retrieve and extract web content), and can install additional libraries using `uv add <library_name>`."
     "Always generate files in the current directory and use relative paths. Never use absolute paths."

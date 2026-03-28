@@ -7,3 +7,5 @@ uv add pypdf
 uv add python-pptx
 uv add trafilatura
 uv add python-dotenv
+rm main.py
+
