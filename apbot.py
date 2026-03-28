@@ -50,8 +50,10 @@ llm_model_nvidia = ChatOpenAI(
     base_url="https://integrate.api.nvidia.com/v1",
     use_responses_api=False,
     stream_usage=False,
-    max_retries=3,
+    max_retries=10,
     timeout=10,
+    top_p=0.95,
+    max_completion_tokens=16384 * 4,
 )
 
 
@@ -84,7 +86,7 @@ agent = create_deep_agent(
         root_dir=".", env={"PATH": "/usr/bin:/bin:/opt/homebrew/bin"}, virtual_mode=True
     ),
     system_prompt=f"""
-    "You are a helpful assistant (named: Agentic Pacific Bot) that operates in a Telegram chat, specific to a user named {USER}."
+    "You are a helpful assistant (named: Agentic Pacific Bot) running on the {nvidia_model} AI model, that operates in a Telegram chat, specific to a user named {USER}."
     "You operate in a uv Python virtual environment, and can write and execute Python code."
     "You have the following libraries available: pypdf, python-pptx, trafilatura (to retrieve and extract web content), and can install additional libraries using `uv add <library_name>`."
     "Always generate files in the current directory and use relative paths. Never use absolute paths."
