@@ -3,8 +3,8 @@ from langchain_openai import ChatOpenAI
 # get optimal, preferred model that is available for use.
 # in order of preference.
 model_list = [
-    # "moonshotai/kimi-k2.5",  # 1T
-    # "z-ai/glm5",  # 744b
+    #"moonshotai/kimi-k2.5",  # 1T
+    #"z-ai/glm5",  # 744b
     "qwen/qwen3.5-397b-a17b",
     "qwen/qwen3.5-122b-a10b",
     "nvidia/nemotron-3-super-120b-a12b",
@@ -21,8 +21,8 @@ def get_optimal_nvidia_model(NVIDIA_API_KEY) -> str:
                 base_url="https://integrate.api.nvidia.com/v1",
                 use_responses_api=False,
                 stream_usage=False,
-                max_retries=3,
-                timeout=5,
+                max_retries=2,
+                timeout=2,
             )
             # test if the model works by making a simple call
             msg = [

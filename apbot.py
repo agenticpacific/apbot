@@ -60,8 +60,10 @@ def get_weather(city: str) -> str:
     """Get weather for a given city."""
     return f"It's always sunny in {city}!"
 
-#web search tool
+
+# web search tool
 web_search = TavilySearch(max_results=5, topic="general")
+
 
 # send file tool
 async def send_file(filename: str) -> str:
@@ -108,14 +110,53 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+# handler to download attachments (photos/documents) sent by the Telegram user
+async def download_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # 1. Identify if it's a Photo or a Document
+    if update.message.photo:
+        # It's a compressed photo.
+        # Get the highest resolution version (last item in the list)
+        attachment = update.message.photo[-1]
+        # Photos don't have a 'file_name' attribute, so we create one
+        filename = f"{attachment.file_unique_id}.jpg"
+        print(f"Downloading Photo: {filename}")
+
+    elif update.message.document:
+        # It's an uncompressed file/document
+        attachment = update.message.document
+        # Documents DO have the original filename
+        filename = attachment.file_name
+        print(f"Downloading Document: {filename}")
+
+    else:
+        return  # Not an image
+
+    # 2. Download the file
+    new_file = await attachment.get_file()
+
+    # Ensure a directory exists
+    os.makedirs("downloads", exist_ok=True)
+    save_path = os.path.join("downloads", filename)
+
+    # 3. Save to disk
+    await new_file.download_to_drive(custom_path=save_path)
+    await update.message.reply_text(f"Saved: {filename}")
+
+
+# main message handler to process incoming messages and respond using the agent
 async def process(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if (
         update.effective_chat.id == CHAT_ID
     ):  # Only respond to messages from this chat ID (Sachin)
         # Run the agent
         print(f"Req Recieved: {update.message.text}")
+
+        # download any files sent by the user
+        await download_attachment(update, context)
+
+        user_text = update.message.text or update.message.caption or "[file received]"
         result = await agent.ainvoke(
-            {"messages": [{"role": "user", "content": update.message.text}]},
+            {"messages": [{"role": "user", "content": user_text}]},
             config={"configurable": {"thread_id": "user_session_1"}},
         )
         # print(result)
@@ -134,7 +175,10 @@ if __name__ == "__main__":
     telegram_bot = application.bot
 
     # handlers
-    process_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), process)
+    process_handler = MessageHandler(
+        (filters.TEXT | filters.PHOTO | filters.Document.ALL) & (~filters.COMMAND),
+        process,
+    )
     help_handler = CommandHandler("help", help)
 
     # register handlers and loop
