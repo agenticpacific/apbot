@@ -21,8 +21,8 @@ def get_optimal_nvidia_model(NVIDIA_API_KEY) -> str:
                 base_url="https://integrate.api.nvidia.com/v1",
                 use_responses_api=False,
                 stream_usage=False,
-                max_retries=2,
-                timeout=2,
+                max_retries=1,
+                timeout=10,
             )
             # test if the model works by making a simple call
             msg = [

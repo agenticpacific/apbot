@@ -3,6 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langchain_tavily import TavilySearch
 from telegram import Update
+from telegram.constants import ParseMode
 from telegram.ext import (
     filters,
     MessageHandler,
@@ -15,6 +16,9 @@ from langchain_openai import ChatOpenAI
 from deepagents.backends import LocalShellBackend
 from langgraph.store.memory import InMemoryStore
 from langgraph.checkpoint.memory import MemorySaver
+import html
+import json
+import traceback
 import models
 
 load_dotenv()  # Load environment variables from .env file
@@ -50,10 +54,9 @@ llm_model_nvidia = ChatOpenAI(
     base_url="https://integrate.api.nvidia.com/v1",
     use_responses_api=False,
     stream_usage=False,
-    max_retries=10,
-    timeout=10,
+    max_retries=3,
     top_p=0.95,
-    max_completion_tokens=16384 * 4,
+    max_completion_tokens=16384 * 2,
 )
 
 
@@ -103,6 +106,9 @@ agent = create_deep_agent(
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
+# set higher logging level for httpx to avoid all GET/POST requests annoying logs
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logger = logging.getLogger(__name__)
 
 
 # direct telegram command handler
@@ -110,6 +116,33 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id, text="I'm a Telegram Bot for Agentic Pacific."
     )
+
+
+# error handler
+async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Log the error and send a telegram message to notify the developer."""
+    # Log the error first
+    logger.error("Exception while handling an update:", exc_info=context.error)
+
+    # Get the traceback as a string
+    tb_list = traceback.format_exception(
+        None, context.error, context.error.__traceback__
+    )
+    tb_string = "".join(tb_list)
+
+    # Build the message with some markup and additional information
+    update_str = update.to_dict() if isinstance(update, Update) else str(update)
+    # message = (
+    #    f"An exception was raised while handling an update\n\n"
+    #    f"<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}</pre>\n\n"
+    #    f"<pre>traceback =\n{html.escape(tb_string)}</pre>"
+    # )
+    #print(update_str)
+    #print(tb_string)
+    # You might want to send this message to a specific developer chat ID
+    # await context.bot.send_message(
+    #    chat_id=CHAT_ID, text=message, parse_mode=ParseMode.HTML
+    # )
 
 
 # handler to download attachments (photos/documents) sent by the Telegram user
@@ -142,7 +175,7 @@ async def download_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     # 3. Save to disk
     await new_file.download_to_drive(custom_path=save_path)
-    await update.message.reply_text(f"Saved: {filename}")
+    await update.message.reply_text(f"Recieved: {filename}")
 
 
 # main message handler to process incoming messages and respond using the agent
@@ -183,7 +216,12 @@ if __name__ == "__main__":
     )
     help_handler = CommandHandler("help", help)
 
-    # register handlers and loop
+    # register handlers
     application.add_handler(help_handler)
     application.add_handler(process_handler)
+
+    # Register the error handler
+    application.add_error_handler(error_handler)
+
+    # run bot
     application.run_polling()
