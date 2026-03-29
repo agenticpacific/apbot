@@ -1,5 +1,6 @@
 import logging, os
 from pathlib import Path
+from turtle import update
 from dotenv import load_dotenv
 from langchain_tavily import TavilySearch
 from telegram import Update
@@ -20,6 +21,8 @@ import html
 import json
 import traceback
 import models
+import socket
+import sys
 
 load_dotenv()  # Load environment variables from .env file
 CHAT_ID = int(os.environ["CHAT_ID"])
@@ -111,34 +114,51 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
-# direct telegram command handler
+# direct telegram command handlers
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id, text="I'm a Telegram Bot for Agentic Pacific."
     )
 
 
+async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.id == CHAT_ID:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"Agentic Pacific Bot - {nvidia_model} AI model @ {socket.gethostname()}",
+        )
+
+
+async def restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.id == CHAT_ID:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"Restarting @ {socket.gethostname()}",
+        )
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+        sys.exit(0)
+
+
 # error handler
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Log the error and send a telegram message to notify the developer."""
     # Log the error first
-    logger.error("Exception while handling an update:", exc_info=context.error)
+    logger.error("Exception: ", exc_info=context.error)
 
     # Get the traceback as a string
-    tb_list = traceback.format_exception(
-        None, context.error, context.error.__traceback__
-    )
-    tb_string = "".join(tb_list)
-
+    # tb_list = traceback.format_exception(
+    #    None, context.error, context.error.__traceback__
+    # )
+    # tb_string = "".join(tb_list)
     # Build the message with some markup and additional information
-    update_str = update.to_dict() if isinstance(update, Update) else str(update)
+    # update_str = update.to_dict() if isinstance(update, Update) else str(update)
     # message = (
     #    f"An exception was raised while handling an update\n\n"
     #    f"<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}</pre>\n\n"
     #    f"<pre>traceback =\n{html.escape(tb_string)}</pre>"
     # )
-    #print(update_str)
-    #print(tb_string)
+    # print(update_str)
+    # print(tb_string)
     # You might want to send this message to a specific developer chat ID
     # await context.bot.send_message(
     #    chat_id=CHAT_ID, text=message, parse_mode=ParseMode.HTML
@@ -214,9 +234,13 @@ if __name__ == "__main__":
         (filters.TEXT | filters.PHOTO | filters.Document.ALL) & (~filters.COMMAND),
         process,
     )
+    ping_handler = CommandHandler("ping", ping)
+    restart_handler = CommandHandler("restart", restart)
     help_handler = CommandHandler("help", help)
 
     # register handlers
+    application.add_handler(ping_handler)
+    application.add_handler(restart_handler)
     application.add_handler(help_handler)
     application.add_handler(process_handler)
 
