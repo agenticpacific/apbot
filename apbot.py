@@ -131,10 +131,11 @@ async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.id == CHAT_ID:
-        await context.bot.send_message(
+        message = await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=f"Restarting @ {socket.gethostname()}",
         )
+        print(message)
         os.execv(sys.executable, [sys.executable] + sys.argv)
         sys.exit(0)
 
@@ -144,6 +145,17 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     """Log the error and send a telegram message to notify the developer."""
     # Log the error first
     logger.error("Exception: ", exc_info=context.error)
+
+    # Get error class and message
+    error_class = context.error.__class__.__name__
+    error_message = str(context.error)
+    error_text = f"<b>Error:</b> {error_class}\n<b>Message:</b> {error_message}"
+
+    await context.bot.send_message(
+        chat_id=CHAT_ID,
+        text=error_text,
+        parse_mode=ParseMode.HTML,
+    )
 
     # Get the traceback as a string
     # tb_list = traceback.format_exception(
