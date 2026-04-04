@@ -3,8 +3,9 @@ from langchain_openai import ChatOpenAI
 # get optimal, preferred model that is available for use.
 # in order of preference.
 model_list = [
-    #"moonshotai/kimi-k2.5",  # 1T
-    #"z-ai/glm5",  # 744b
+    # "moonshotai/kimi-k2.5",  # 1T
+    # "z-ai/glm5",  # 744b
+    "google/gemma-4-31b-it",  # 31b
     "qwen/qwen3.5-397b-a17b",
     "qwen/qwen3.5-122b-a10b",
     "nvidia/nemotron-3-super-120b-a12b",
@@ -13,6 +14,7 @@ model_list = [
 
 
 def get_optimal_nvidia_model(NVIDIA_API_KEY) -> str:
+    print("apbot Init: Acquiring Best Available NVIDIA Model...")
     for model_name in model_list:
         try:
             llm_model_nvidia = ChatOpenAI(

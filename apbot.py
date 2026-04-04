@@ -41,6 +41,8 @@ llm_model_gguf = ChatOpenAI(
     use_responses_api=False,
 )
 
+#http://localhost:8080/v1/models
+
 # mlx
 llm_model_mlx = ChatOpenAI(
     model=str(Path.home()) + "/Models/mlx-community/Qwen3.5-9B-MLX-4bit",
@@ -72,10 +74,9 @@ def get_weather(city: str) -> str:
 # web search tool
 web_search = TavilySearch(max_results=5, topic="general")
 
-
 # send file tool
 async def send_file(filename: str) -> str:
-    """Send a file or document."""
+    """Send a file or document as a Telegram message attachment."""
     if telegram_bot is None:
         raise RuntimeError("Telegram bot is not initialized.")
     await telegram_bot.send_document(chat_id=CHAT_ID, document=filename)
