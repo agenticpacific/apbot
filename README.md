@@ -1,6 +1,6 @@
 # Agentic Pacific Bot
 
-Telegram Bot Agent based on LandChain DeepAgents Harness.
+Telegram Bot Agent based on LangChain DeepAgents Harness.
 
 
 
