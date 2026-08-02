@@ -3,12 +3,11 @@ from langchain_openai import ChatOpenAI
 # get optimal, preferred model that is available for use.
 # in order of preference.
 model_list = [
-    # "moonshotai/kimi-k2.5",  # 1T
-    # "z-ai/glm5",  # 744b
-    "google/gemma-4-31b-it",  # 31b
-    "qwen/qwen3.5-397b-a17b",
-    "qwen/qwen3.5-122b-a10b",
+    "z-ai/glm-5.2",
+    "moonshotai/kimi-k2.6",
+    "nvidia/nemotron-3-ultra-550b-a55b",
     "nvidia/nemotron-3-super-120b-a12b",
+    "deepseek-ai/deepseek-v4-flash",
     "openai/gpt-oss-120b",
 ]
 

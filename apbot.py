@@ -1,6 +1,5 @@
 import logging, os
 from pathlib import Path
-from turtle import update
 from dotenv import load_dotenv
 from langchain_tavily import TavilySearch
 from telegram import Update
@@ -17,18 +16,18 @@ from langchain_openai import ChatOpenAI
 from deepagents.backends import LocalShellBackend
 from langgraph.store.memory import InMemoryStore
 from langgraph.checkpoint.memory import MemorySaver
-import html
-import json
-import traceback
 import models
 import socket
 import sys
+from agentmail import AsyncAgentMail
+import base64
 
 load_dotenv()  # Load environment variables from .env file
 CHAT_ID = int(os.environ["CHAT_ID"])
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 NVIDIA_API_KEY = os.environ["NVIDIA_API_KEY"]
 TAVILY_API_KEY = os.environ["TAVILY_API_KEY"]
+AGENTMAIL_API_KEY = os.environ["AGENTMAIL_API_KEY"]
 USER = os.environ["USER"]
 
 telegram_bot = None
@@ -41,7 +40,7 @@ llm_model_gguf = ChatOpenAI(
     use_responses_api=False,
 )
 
-#http://localhost:8080/v1/models
+# http://localhost:8080/v1/models
 
 # mlx
 llm_model_mlx = ChatOpenAI(
@@ -65,14 +64,9 @@ llm_model_nvidia = ChatOpenAI(
 )
 
 
-# demo agent tool
-def get_weather(city: str) -> str:
-    """Get weather for a given city."""
-    return f"It's always sunny in {city}!"
-
-
 # web search tool
 web_search = TavilySearch(max_results=5, topic="general")
+
 
 # send file tool
 async def send_file(filename: str) -> str:
@@ -83,21 +77,50 @@ async def send_file(filename: str) -> str:
     return f"Sent File: {filename}"
 
 
+# send email too
+async def send_email(subject: str, body: str, attachment: str | None = None) -> str:
+    """Send an email to user using AgentMail, with an optional file attachment."""
+    agent_mail = AsyncAgentMail(api_key=AGENTMAIL_API_KEY)
+
+    inboxes = await agent_mail.inboxes.list()
+    inbox_id = inboxes.inboxes[0].inbox_id
+
+    attachments = None
+    if attachment is not None:
+        with open(attachment, "rb") as f:
+            file_content = f.read()
+        attachments = [
+            {
+                "filename": Path(attachment).name,
+                "content": base64.b64encode(file_content).decode(),
+            }
+        ]
+
+    await agent_mail.inboxes.messages.send(
+        inbox_id=inbox_id,
+        to="sachin1618@gmail.com",
+        subject=subject,
+        text=body,
+        attachments=attachments,
+    )
+    return f"Sent Email: {subject}"
+
+
 # agent
 print(f"Initializing Agent: {nvidia_model}")
 memory_check_pointer = MemorySaver()
 agent = create_deep_agent(
     model=llm_model_nvidia,
-    tools=[send_file, web_search],
+    tools=[send_file, send_email, web_search],
     backend=LocalShellBackend(
         root_dir=".", env={"PATH": "/usr/bin:/bin:/opt/homebrew/bin"}, virtual_mode=True
     ),
     system_prompt=f"""
     "You are a helpful assistant (named: Agentic Pacific Bot) running on the {nvidia_model} AI model, that operates in a Telegram chat, specific to a user named {USER}."
     "You operate in a uv Python virtual environment, and can write and execute Python code."
-    "You have the following libraries available: pypdf, python-pptx, trafilatura (to retrieve and extract web content), and can install additional libraries using `uv add <library_name>`."
+    "You have the following libraries available: pypdf, python-pptx, trafilatura (to retrieve and extract web content), liteparse (to extract txt from documents and pdf), matplotlib, and can install additional libraries using `uv add <library_name>`."
     "Always generate files in the current directory and use relative paths. Never use absolute paths."
-    "You can use the following tools: send_file(filename) to send a file or document to the user."
+    "You can use the following tools: send_file(filename) to send a file or document to the user, and send_email to send an email to the user."
     "Always use the send_file tool to send files to the user instead of printing file contents.
     Use web search tool to find accurate, up-to-date information.
     """,
