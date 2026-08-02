@@ -1,0 +1,20 @@
+[project]
+name = "apbot"
+version = "0.2.0"
+description = "Agentic Pacific Custom Generic Bot"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "deepagents",
+    "langchain-openai",
+    "langchain-tavily",
+    "matplotlib",
+    "numpy",
+    "pypdf",
+    "python-dotenv",
+    "python-pptx",
+    "python-telegram-bot",
+    "trafilatura",
+    "liteparse",
+    "agentmail"
+]
