@@ -63,7 +63,6 @@ llm_model_nvidia = ChatOpenAI(
     max_completion_tokens=16384 * 2,
 )
 
-
 # web search tool
 web_search = TavilySearch(max_results=5, topic="general")
 
